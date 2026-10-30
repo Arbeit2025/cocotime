@@ -1,6 +1,6 @@
 import importlib.util
+import json
 import os
-import re
 import unittest
 
 APP_PATH = os.path.join(
@@ -47,7 +47,9 @@ class CocotimeTest(unittest.TestCase):
         self.assertIn('id="timerMin"', body)
         self.assertIn('id="timerSec"', body)
         self.assertIn('data-preset="1500"', body)
-        self.assertIn(self.mod.TIMER_DONE_LINE, body)
+        # セリフは tojson で \uXXXX 形式にエスケープされて埋め込まれる
+        escaped = json.dumps(self.mod.TIMER_DONE_LINE, ensure_ascii=True)[1:-1]
+        self.assertIn(escaped, body)
 
     def test_calculator_no_eval(self):
         with open(APP_PATH, encoding="utf-8") as f:
@@ -62,7 +64,9 @@ class CocotimeTest(unittest.TestCase):
         self.assertEqual(len(self.mod.GREETINGS), len(set(self.mod.GREETINGS)))
         body = self.client.get("/").get_data(as_text=True)
         for line in self.mod.GREETINGS:
-            self.assertIn(line, body)
+            # tojson のエスケープ形式で埋め込まれていることを確認
+            escaped = json.dumps(line, ensure_ascii=True)[1:-1]
+            self.assertIn(escaped, body)
 
     def test_healthz(self):
         res = self.client.get("/healthz")
